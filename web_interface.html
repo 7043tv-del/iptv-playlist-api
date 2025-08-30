@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Playlist API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .search-section {
+            margin-bottom: 30px;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .search-button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .search-button:hover {
+            background: #5a6fd8;
+        }
+        
+        .results-section {
+            margin-bottom: 30px;
+        }
+        
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .channel-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .channel-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .channel-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            object-fit: cover;
+            margin-bottom: 15px;
+        }
+        
+        .channel-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .channel-category {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .channel-url {
+            font-size: 0.8em;
+            color: #666;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #ffe6e6;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .category-filter {
+            margin-bottom: 20px;
+        }
+        
+        .category-select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+        
+        .api-endpoints {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .api-endpoints h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .endpoint {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .endpoint-url {
+            font-family: monospace;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .endpoint-desc {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📺 IPTV Playlist API</h1>
+            <p>Access your converted playlist through a powerful REST API</p>
+        </div>
+        
+        <div class="content">
+            <!-- Stats Section -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalChannels">-</div>
+                    <div class="stat-label">Total Channels</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCategories">-</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="apiStatus">-</div>
+                    <div class="stat-label">API Status</div>
+                </div>
+            </div>
+            
+            <!-- API Endpoints -->
+            <div class="api-endpoints">
+                <h3>🔗 Available API Endpoints</h3>
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/stats</div>
+                    <div class="endpoint-desc">Get playlist statistics and category counts</div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/channels?page=1&per_page=50</div>
+                    <div class="endpoint-desc">Get paginated list of all channels</div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/search?q=news&limit=20</div>
+                    <div class="endpoint-desc">Search channels by name</div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/categories</div>
+                    <div class="endpoint-desc">Get all available categories</div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/categories/Movies</div>
+                    <div class="endpoint-desc">Get channels by specific category</div>
+                </div>
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/playlist</div>
+                    <div class="endpoint-desc">Download the full playlist file</div>
+                </div>
+            </div>
+            
+            <!-- Search Section -->
+            <div class="search-section">
+                <h3>🔍 Search Channels</h3>
+                <div class="search-box">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Enter channel name to search...">
+                    <button onclick="searchChannels()" class="search-button">Search</button>
+                </div>
+                
+                <div class="category-filter">
+                    <label for="categorySelect">Filter by Category:</label>
+                    <select id="categorySelect" class="category-select" onchange="filterByCategory()">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="results-section">
+                <h3>📺 Channel Results</h3>
+                <div id="resultsContainer">
+                    <div class="loading">Enter a search term or select a category to view channels</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        // Load initial stats
+        loadStats();
+        loadCategories();
+        
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const data = await response.json();
+                
+                document.getElementById('totalChannels').textContent = data.total_channels.toLocaleString();
+                document.getElementById('totalCategories').textContent = data.total_categories;
+                document.getElementById('apiStatus').textContent = '🟢 Online';
+            } catch (error) {
+                document.getElementById('apiStatus').textContent = '🔴 Offline';
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${API_BASE}/categories`);
+                const data = await response.json();
+                
+                const select = document.getElementById('categorySelect');
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+        
+        async function searchChannels() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&limit=20`);
+                const data = await response.json();
+                
+                displayChannels(data.results, `Search results for "${query}" (${data.total_found} found)`);
+            } catch (error) {
+                showError('Error searching channels: ' + error.message);
+            }
+        }
+        
+        async function filterByCategory() {
+            const category = document.getElementById('categorySelect').value;
+            if (!category) return;
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`${API_BASE}/categories/${encodeURIComponent(category)}?limit=50`);
+                const data = await response.json();
+                
+                displayChannels(data.channels, `${category} Channels (${data.total} total)`);
+            } catch (error) {
+                showError('Error loading category: ' + error.message);
+            }
+        }
+        
+        function displayChannels(channels, title) {
+            const container = document.getElementById('resultsContainer');
+            
+            if (channels.length === 0) {
+                container.innerHTML = '<div class="loading">No channels found</div>';
+                return;
+            }
+            
+            let html = `<h4 style="margin-bottom: 20px; color: #333;">${title}</h4>`;
+            html += '<div class="channel-grid">';
+            
+            channels.forEach(channel => {
+                const logo = channel.tvg_logo || 'https://via.placeholder.com/60x60/667eea/ffffff?text=TV';
+                const name = channel.name || 'Unknown Channel';
+                const category = channel.group_title || 'General';
+                const url = channel.stream_url || '';
+                
+                html += `
+                    <div class="channel-card">
+                        <img src="${logo}" alt="${name}" class="channel-logo" onerror="this.src='https://via.placeholder.com/60x60/667eea/ffffff?text=TV'">
+                        <div class="channel-name">${name}</div>
+                        <div class="channel-category">${category}</div>
+                        <div class="channel-url">${url.substring(0, 50)}...</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        function showLoading() {
+            document.getElementById('resultsContainer').innerHTML = '<div class="loading">Loading channels...</div>';
+        }
+        
+        function showError(message) {
+            document.getElementById('resultsContainer').innerHTML = `<div class="error">${message}</div>`;
+        }
+        
+        // Search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchChannels();
+            }
+        });
+    </script>
+</body>
+</html>
